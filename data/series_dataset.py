@@ -9,6 +9,8 @@ class TrajectoryDataset(AfmDataset):
         self.n_samples = self.single_data_raster_length * self.good_pickle_amount
 
     def __getitem__(self, index):
+        if not 0 <= index < len(self):
+            raise IndexError("Index out of range")
         # dataset[i]
         pickle_i, raster_i = np.unravel_index(index, (self.good_pickle_amount,
                                                       self.single_data_raster_length))
