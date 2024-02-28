@@ -1,8 +1,8 @@
 import numpy as np
-from afm_dataset import AfmDataset
+from data.afm_dataset import AfmDataset
 
 
-class TrajectoryDataset(AfmDataset):
+class SeriesDataset(AfmDataset):
     def __init__(self, data_path, pickle_amount):
         super().__init__(data_path, pickle_amount)
 
@@ -31,3 +31,34 @@ class TrajectoryDataset(AfmDataset):
     def __len__(self):
         # len(dataset)
         return self.n_samples
+
+    def _simple_raster(self, maps):
+        """This rastering assumes that the speed of the tip matches the non-rasterized frames. Also it accounts for
+         a single rasterized images"""
+        raster = np.zeros(shape=(self.size_x, self.size_y))
+        x, y = 0, 0
+        for i in range(len(maps)):
+            if i % (self.size_x * 2) >= self.size_x:
+                continue
+            elif i % (self.size_x * 2) == self.size_x - 1:
+                raster[x, y] = maps[i][x, y]
+                y += 1
+                x = 0
+                continue
+            raster[x, y] = maps[i][x, y]
+            x += 1
+        return raster
+
+    @staticmethod
+    def get_raster_x_y_by_index(i, size_x, size_y):
+        if i % (size_x * 2) >= size_x:
+            return None, None
+        else:
+            greater = False
+            if i >= size_x * size_y:
+                i -= size_x * size_y
+                greater = True
+            y, x = np.unravel_index(i, (size_x, size_y))
+            if greater:
+                y += size_y
+            return x, int(y / 2)
