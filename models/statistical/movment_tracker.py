@@ -14,6 +14,9 @@ class MovementSeries:
         self._positions = []
         # self._sizes = []
 
+    def __len__(self):
+        return len(self._positions)
+
     def get_start_i(self):
         return self._start_i
 
@@ -93,11 +96,11 @@ class MovementTracker:
         self._image_series = image_series
         self._window_r = window_r
 
-    def get_movement_series_array(self):
-        movement_series_array = []
+    def get_movement_series_list(self):
+        movement_series_list = []
         for im_i, im in enumerate(self._image_series):
-            self.add_frame_to_series_array(movement_series_array, im, im_i)
-        return movement_series_array
+            self.add_frame_to_series_array(movement_series_list, im, im_i)
+        return movement_series_list
 
     def add_frame_to_series_array(self, movement_series_array, im, im_i):
         belong_i = -np.ones(shape=im.shape)

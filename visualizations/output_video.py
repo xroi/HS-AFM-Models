@@ -9,7 +9,7 @@ from data.series.series_dataset import SeriesDataset
 
 def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, timestamp_step=-1, max_frames=240,
                  add_legend=False, crop_from_sides_px=0, draw_inner_circle_r=-1, draw_outer_circle_r=-1,
-                 frames_per_second=20, add_scale=False, movement_series_array=None, add_tip_position=False):
+                 frames_per_second=20, add_scale=False, movement_series_list=None, add_tip_position=False):
     """z_center is the real center"""
     # Generate legend image
     if add_legend:
@@ -38,8 +38,8 @@ def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, time
         im = generate_base_image(height_map, cm, max_z, min_z, res_x, res_y)
         image_draw = ImageDraw.Draw(im, "RGBA")
         pixel_size = res_x / (maps[0].shape[0] - crop_from_sides_px * 2)
-        if movement_series_array is not None:
-            draw_movement_series(i, image_draw, maps, movement_series_array, pixel_size)
+        if movement_series_list is not None:
+            draw_movement_series(i, image_draw, maps, movement_series_list, pixel_size)
         if add_tip_position:
             x, y = SeriesDataset.get_raster_x_y_by_index(i, maps[0].shape[0], maps[0].shape[1])
             if x is not None:

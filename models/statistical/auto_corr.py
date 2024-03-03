@@ -43,12 +43,10 @@ def double_exponent_model_func(t: float, tau_u: float, tau_f: float, s_u: float,
 
 
 # noinspection PyTupleAssignmentBalance
-def calculate_taus(acorrs: np.ndarray):
+def calculate_taus_single_exponent(acorrs: np.ndarray):
     """Given a 3d array where z vectors are auto correlations values in lags 0,...,acorrs.shape[2] fits the points to
     an exponential decay function and return an array of size (acorrs.shape[0],acorrs.shape[1]), with the fitted tau
     values."""
-    model_func = single_exponent_model_func()
-
     xdata = [i for i in range(acorrs.shape[2])]
     taus = np.zeros(shape=(acorrs.shape[0], acorrs.shape[1]))
     for x, y in product(range(taus.shape[0]), range(taus.shape[1])):
@@ -56,9 +54,37 @@ def calculate_taus(acorrs: np.ndarray):
             taus[x, y] = -1
             continue
         try:
-            tau, param_cov = curve_fit(f=model_func, xdata=xdata, ydata=acorrs[x, y, :],
-                                       full_output=False, p0=(1.0), maxfev=5000)
+            tau, param_cov = curve_fit(f=single_exponent_model_func,
+                                       xdata=xdata,
+                                       ydata=acorrs[x, y, :],
+                                       full_output=False,
+                                       p0=(1.0),
+                                       maxfev=5000)
         except RuntimeError:
             tau = -1
         taus[x, y] = tau
     return taus
+
+
+def calculate_taus_double_exponent(acorrs: np.ndarray):
+    xdata = [i for i in range(acorrs.shape[2])]
+    taus_u = np.zeros(shape=(acorrs.shape[0], acorrs.shape[1]))
+    taus_f = np.zeros(shape=(acorrs.shape[0], acorrs.shape[1]))
+    for x, y in product(range(taus_u.shape[0]), range(taus_u.shape[1])):
+        if np.all(acorrs[x, y, :] == acorrs[x, y, :][0]):
+            taus_u[x, y] = -1
+            taus_f[x, y] = -1
+            continue
+        try:
+            tau_u, tau_f, s_u, s_f, param_cov = curve_fit(f=double_exponent_model_func,
+                                                          xdata=xdata,
+                                                          ydata=acorrs[x, y, :],
+                                                          full_output=False,
+                                                          p0=(1.0, 1.0, 1.0, 1.0),
+                                                          maxfev=5000)
+        except RuntimeError:
+            tau_u = -1
+            tau_f = -1
+        taus_u[x, y] = tau_u
+        taus_f[x, y] = tau_f
+    return taus_u, taus_f
