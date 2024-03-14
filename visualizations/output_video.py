@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import moviepy.editor as mp
 import cv2
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from data.series.series_dataset import SeriesDataset
+from datasets.series.series_dataset import SeriesDataset
 
 
 def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, timestamp_step=-1, max_frames=240,
@@ -31,7 +31,7 @@ def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, time
     # Load the colormap
     cm = plt.get_cmap(colormap_name)
 
-    # Generate Frames
+    # Generate Frames Sequentially
     for i, height_map in enumerate(maps):
         if crop_from_sides_px > 0:
             height_map = height_map[crop_from_sides_px:-crop_from_sides_px, crop_from_sides_px:-crop_from_sides_px]
@@ -41,12 +41,7 @@ def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, time
         if movement_series_list is not None:
             draw_movement_series(i, image_draw, maps, movement_series_list, pixel_size)
         if add_tip_position:
-            x, y = SeriesDataset.get_raster_x_y_by_index(i, maps[0].shape[0], maps[0].shape[1])
-            if x is not None:
-                y = maps[0].shape[1] - y - 1
-                point_coords = ((x + 0.1) * pixel_size, (y + 0.1) * pixel_size,
-                                (x + 0.9) * pixel_size, (y + 0.9) * pixel_size)
-                image_draw.rectangle(point_coords, fill=(0, 0, 0, 255))
+            add_tip_position_to_image(i, image_draw, maps, pixel_size)
         if timestamp_step != -1:
             draw_timestamp(image_draw, timestamp_font, timestamp_step, i)
         if draw_inner_circle_r != -1:
@@ -65,10 +60,19 @@ def output_video(maps, filename, min_z, max_z, res_x, res_y, colormap_name, time
     video.release()
 
 
-def draw_movement_series(i, image_draw, maps, movement_series_array, pixel_size):
+def add_tip_position_to_image(i, image_draw, maps, pixel_size):
+    x, y = SeriesDataset.get_raster_x_y_by_index(i, maps[0].shape[0], maps[0].shape[1])
+    if x is not None:
+        y = maps[0].shape[1] - y - 1
+        point_coords = ((x + 0.1) * pixel_size, (y + 0.1) * pixel_size,
+                        (x + 0.9) * pixel_size, (y + 0.9) * pixel_size)
+        image_draw.rectangle(point_coords, fill=(0, 0, 0, 255))
+
+
+def draw_movement_series(i, image_draw, maps, movement_series_list, pixel_size):
     prev_drawn = {}
     prev_points_to_show = 3
-    for series in movement_series_array:
+    for series in movement_series_list:
         prev_drawn[series] = {}
         for j in range(-prev_points_to_show, 1, 1):
             if series.is_i_in_range(i + j):

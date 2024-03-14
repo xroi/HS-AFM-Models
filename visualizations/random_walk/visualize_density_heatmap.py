@@ -4,16 +4,19 @@ import plotly.graph_objects as go
 import numpy as np
 
 
-def visualize_taus(taus, file_path):
+def visualize_density_heatmap(movement_series_list, file_path):
     cm = plt.get_cmap("jet")
     cm = matplotlib_to_plotly(cm, 255, zero_color=None)
     fig = go.Figure()
-    # taus = np.fliplr(np.flipud(taus))
+    z = np.zeros(shape=(40, 40))
+    for series in movement_series_list:
+        for x, y in series.get_positions():
+            z[x, y] += 1
     fig.add_trace(
-        go.Heatmap(z=taus,
-                   colorbar={"title": 'Tau (μs)'},
+        go.Heatmap(z=z,
+                   colorbar={"title": 'Frames'},
                    zmin=0,
-                   # zmax=0.4,
+                   zmax=100,
                    colorscale=cm))
     fig.layout.height = 500
     fig.layout.width = 500

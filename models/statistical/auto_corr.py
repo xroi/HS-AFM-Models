@@ -76,12 +76,14 @@ def calculate_taus_double_exponent(acorrs: np.ndarray):
             taus_f[x, y] = -1
             continue
         try:
-            tau_u, tau_f, s_u, s_f, param_cov = curve_fit(f=double_exponent_model_func,
-                                                          xdata=xdata,
-                                                          ydata=acorrs[x, y, :],
-                                                          full_output=False,
-                                                          p0=(1.0, 1.0, 1.0, 1.0),
-                                                          maxfev=5000)
+            vals, param_cov = curve_fit(f=double_exponent_model_func,
+                                        xdata=xdata,
+                                        ydata=acorrs[x, y, :],
+                                        full_output=False,
+                                        p0=(1.0, 1.0, 1.0, 1.0),
+                                        maxfev=5000)
+            tau_u = vals[0]
+            tau_f = vals[1]
         except RuntimeError:
             tau_u = -1
             tau_f = -1

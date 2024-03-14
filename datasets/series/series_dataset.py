@@ -1,9 +1,12 @@
 import numpy as np
-from data.afm_dataset import AfmDataset
+from datasets.afm_dataset import AfmDataset
 
 
 class SeriesDataset(AfmDataset):
     def __init__(self, data_path, pickle_amount):
+        """ X = A series of full non rasterized HS-AFM images, corresponding to a single rasterized image.
+        Y = A single rasterized image.
+        """
         super().__init__(data_path, pickle_amount)
 
         self.n_samples = self.single_data_raster_length * self.good_pickle_amount
@@ -23,7 +26,7 @@ class SeriesDataset(AfmDataset):
         # (*2 is to account for return time)
         frames_in_single_raster = self.size_x * self.size_y * 2
 
-        x = self.cur_pickle["real_time_maps"][
+        x = self.cur_pickle["non_rasterized_maps"][
             frames_in_single_raster * raster_i: frames_in_single_raster * (raster_i + 1)]
         y = self.cur_pickle["rasterized_maps"][raster_i]
         return x, y

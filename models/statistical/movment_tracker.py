@@ -92,9 +92,10 @@ class MovementSeries:
 
 
 class MovementTracker:
-    def __init__(self, image_series, window_r):
+    def __init__(self, image_series, window_r, no_ntr=False):
         self._image_series = image_series
         self._window_r = window_r
+        self._no_ntr = no_ntr
 
     def get_movement_series_list(self):
         movement_series_list = []
@@ -107,6 +108,9 @@ class MovementTracker:
         # belong_i holds, for every pixel, what is the index of the movement series to which it belongs
         for x, y in product(range(im.shape[0]), range(im.shape[1])):
             if belong_i[x, y] != -1:
+                continue
+            if (x - 20) ** 2 + (y - 20) ** 2 > 18.5 ** 2:
+                belong_i[x, y] = -2
                 continue
             self.iterate_to_find_max(im, x, y, belong_i, movement_series_array, im_i)
 
@@ -140,6 +144,9 @@ class MovementTracker:
         return max_coord, mask
 
     def add_to_movement_series_array(self, x, y, movement_series_array, im_i):
+        # ignore local maxima on the edges
+        if x in [0, 39] or y in [0, 39]:
+            return -2
         for i, series in enumerate(movement_series_array):
             if series.get_final_i() != im_i:
                 continue

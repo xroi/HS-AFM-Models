@@ -1,5 +1,5 @@
 import numpy as np
-from data.afm_dataset import AfmDataset
+from datasets.afm_dataset import AfmDataset
 
 
 class SingleTrajectoryDataset(AfmDataset):
