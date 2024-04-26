@@ -9,45 +9,48 @@ from datasets.series.line_series_torch_wrapper import LineSeriesTorchWrapper
 class LineNeuralNet(nn.Module):
     def __init__(self):
         super(LineNeuralNet, self).__init__()
-        self.l1 = nn.Linear(1600, 1600, dtype=torch.float64)
-        self.r1 = nn.ReLU()
-        self.c1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=8, stride=1, padding="same", dtype=torch.float64)
-        self.r2 = nn.ReLU()
-        self.c2 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(1, 8), stride=1, padding="same",
-                            dtype=torch.float64)
-        self.r3 = nn.ReLU()
-        self.l2 = nn.Linear(1600, 1600, dtype=torch.float64)
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5, stride=1, padding="same", dtype=torch.float64)
+        self.bn1 = nn.BatchNorm2d(10, dtype=torch.float64)
+        self.relu1 = nn.ReLU()
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=5, stride=1, padding="same", dtype=torch.float64)
+        self.bn2 = nn.BatchNorm2d(20, dtype=torch.float64)
+        self.relu2 = nn.ReLU()
+        self.do1 = nn.Dropout(p=0.15)
+        self.conv3 = nn.Conv2d(20, 40, kernel_size=5, stride=1, padding="same", dtype=torch.float64)
+        self.bn3 = nn.BatchNorm2d(40, dtype=torch.float64)
+        self.relu3 = nn.ReLU()
+        self.do2 = nn.Dropout(p=0.15)
+        self.conv4 = nn.Conv2d(1, 1, kernel_size=5, stride=1, padding="same", dtype=torch.float64)
+        self.rnn = nn.RNN(40, 40, 2, batch_first=True, dtype=torch.float64)
+        self.fc = nn.Linear(40 * 40, 40 * 40, dtype=torch.float64)
 
     def forward(self, x):
-        out = torch.flatten(x, start_dim=1)
-        out = self.l1(out)
-        out = torch.unflatten(out, 1, (40, 40))
-        out = self.r1(out)
-        out = out[:, None, :, :]  # required for conv2d
-        out = self.c1(out)
-        out = self.r2(out)
-        out = self.c2(out)
-        out = self.r3(out)
-        out = torch.flatten(out, start_dim=1)
-        out = self.l2(out)
-        out = torch.unflatten(out, 1, (40, 40))
-        # remove dimension of size 1
-        out = torch.squeeze(out)
-        # min-max normalize the result
-        # out_min, out_max = out.min(), out.max()
-        # new_min, new_max = 0, 1
-        # out = (out - out_min) / (out_max - out_min) * (new_max - new_min) + new_min
-        out = torch.softmax()
-        return out
+        x = x.unsqueeze(1)  # add a channel dimension
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.do1(self.relu2(self.bn2(self.conv2(x))))
+        x = self.do2(self.relu3(self.bn3(self.conv3(x))))
+        x = x.permute((0, 3, 2, 1))
+        x = self.conv4(x)
+        x = x.squeeze(1)
+
+        x = torch.transpose(x, 1, 2)
+        h0 = torch.zeros(2, x.shape[0], 40, dtype=torch.float64)
+        x, _ = self.rnn(x, h0)
+
+        x = torch.flatten(x, 1, 2)
+        x = self.fc(x)
+        x = torch.unflatten(x, 1, (40, 40))
+
+        return x
 
     @staticmethod
     def train_network():
         batch_size = 64
         learning_rate = 0.01
-        num_epochs = 5
+        num_epochs = 10
 
         # Set up the datasets
-        orig_dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40", 60, line_y=20)
+        orig_dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40", 75, line_y=20)
         torch_dataset = LineSeriesTorchWrapper(orig_dataset)
         train_dataloader = DataLoader(dataset=torch_dataset, batch_size=batch_size, shuffle=True)
         n_total_steps = len(train_dataloader)
@@ -58,7 +61,7 @@ class LineNeuralNet(nn.Module):
         model = LineNeuralNet().to(device)
 
         # Loss and optimizer
-        loss_func = nn.L1Loss()
+        loss_func = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
         # Train the model

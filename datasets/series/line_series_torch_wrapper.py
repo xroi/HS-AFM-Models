@@ -15,12 +15,12 @@ class LineSeriesTorchWrapper(Dataset):
             stacked_lines = np.hstack((stacked_lines, x))
         stacked_lines = stacked_lines[:, 1:]
 
-        stacked_x = np.zeros(shape=(40, 1))
-        for j in range(40):
-            stacked_x = np.hstack((stacked_x, [x[j]] * 40))
-        stacked_x = stacked_x[:, 1:]
-        
-        x = torch.from_numpy(stacked_x)
+        # stacked_x = np.zeros(shape=(40, 1))
+        # for j in range(40):
+        #     stacked_x = np.hstack((stacked_x, [x[j]] * 40))
+        # stacked_x = stacked_x[:, 1:]
+
+        x = torch.from_numpy(x)
         y = torch.from_numpy(stacked_lines)
 
         # min max normalize x and y to be between 0 and 1
