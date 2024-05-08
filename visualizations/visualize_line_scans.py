@@ -62,8 +62,8 @@ def visualize_non_rasterized_line_scans(line_scans, file_path):
     fig.update_layout(
         xaxis={
             "tickmode": 'array',
-            "tickvals": [i for i in range(0, 3200, 400)],
-            "ticktext": [i for i in range(0, 321, 40)]
+            "tickvals": [i for i in range(0, 40, 10)],
+            "ticktext": [i * 0.1 for i in range(0, 40, 10)]
         },
         yaxis={
             "tickmode": 'array',
@@ -85,4 +85,4 @@ def visualize_non_rasterized_line_scans(line_scans, file_path):
     #      'xref': 'x',
     #      'yref': 'y', "line": dict(width=2, color="Black"), 'opacity': 0.7}, )
     fig.update_layout(yaxis=dict(scaleanchor='x'))
-    fig.write_image(file_path, width=4000, height=600)
+    fig.write_image(file_path, width=600, height=600)

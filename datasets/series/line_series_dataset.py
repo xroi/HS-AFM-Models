@@ -13,6 +13,7 @@ class LineSeriesDataset(AfmDataset):
         self.single_data_raster_length = self.single_data_raster_length * self.size_y
         self.n_samples = self.single_data_raster_length * self.good_pickle_amount
         self.line_y = line_y
+        self.stacked_data = None
 
     def __getitem__(self, index):
         """x: 40/80 non rasterized frames (of forward and potentially back movement)
@@ -60,6 +61,8 @@ class LineSeriesDataset(AfmDataset):
         """
         :return: a 40x40xn array with non rasterized line scans. The diagonal entries form the rasterized line scan.
         """
+        if self.stacked_data is not None:
+            return self.stacked_data
         if self.get_back_frames is True:
             raise Exception("Cannot get regression formatted data if get_back_frames is True")
         res = np.zeros(shape=(40, 40, 1))
@@ -67,6 +70,7 @@ class LineSeriesDataset(AfmDataset):
             stacked_lines = self.get_single_stacked_lines(i)[:, :, np.newaxis]
             res = np.concatenate((res, stacked_lines), axis=2)
         res = res[:, :, 1:]
+        self.stacked_data = res
         return res
 
     def get_regression_formatted_data_(self, stacked_data):
@@ -75,7 +79,14 @@ class LineSeriesDataset(AfmDataset):
             X_mat = np.concatenate((X_mat, stacked_data[i, i, :][:, np.newaxis]), axis=1)
         return X_mat
 
-        # @staticmethod
+    def get_regression2_formatted_data_(self, line_regression1):
+        X_mat = line_regression1.pred(self.__getitem__(0)[1].T).flatten()[np.newaxis, :]
+        for i in range(1, self.__len__()):
+            X_mat = np.concatenate((X_mat, line_regression1.pred(self.__getitem__(i)[1].T).flatten()[np.newaxis, :]),
+                                   axis=0)
+        return X_mat
+
+    # @staticmethod
     # def get_raster_x_y_by_index(i, size_x, size_y):
     #     if i % (size_x * 2) >= size_x:
     #         return None, None
