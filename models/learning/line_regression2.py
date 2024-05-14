@@ -16,7 +16,7 @@ class LineRegression2:
         self.model = RegressorChain(lin_reg, verbose=True, order=LineRegression2.get_diagonal_indices(40, 39))
 
     def train_regression_models(self):
-        dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40", 75, line_y=20, get_back_frames=False)
+        dataset = LineSeriesDataset("temp_datasets/mini_200uM_10ns_40x40", 75, line_y=20, get_back_frames=False)
         stacked_data = dataset.get_stacked_data()
         regression_X = dataset.get_regression_formatted_data_(stacked_data)
 
@@ -29,7 +29,7 @@ class LineRegression2:
 
     def test_model(self):
         # pickles 75 to 100
-        dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40/test", 100, line_y=20,
+        dataset = LineSeriesDataset("temp_datasets/mini_200uM_10ns_40x40/test", 100, line_y=20,
                                     get_back_frames=False)
         ground_truth = np.zeros(shape=(40, 40, len(dataset)))
         pred_values = np.zeros(shape=(40, 40, len(dataset)))
@@ -44,8 +44,11 @@ class LineRegression2:
         print(np.mean(residuals, axis=(0, 1, 2)))
         np.set_printoptions(threshold=sys.maxsize)
         import matplotlib.pyplot as plt
-        plt.scatter(ground_truth[20, 20, :], ground_truth[20, 23, :], alpha=0.3)
+        plt.imshow(np.mean(residuals, axis=2), cmap='hot', interpolation='nearest')
+        plt.colorbar()
         plt.show()
+        # plt.scatter(ground_truth[20, 20, :], ground_truth[20, 23, :], alpha=0.3)
+        # plt.show()
 
     def pred(self, x):
         """Given a (40x1) vector, return a predicted 40x40 array"""

@@ -92,10 +92,15 @@ class MovementSeries:
 
 
 class MovementTracker:
-    def __init__(self, image_series, window_r, no_ntr=False):
+    def __init__(self, image_series, window_r, include_r):
+        """
+        :param image_series: Series of non rasterized afm images.
+        :param window_r: The radius (in px) used for tracking (finding the local max in window_r around each point).
+        :param include_r: The radius (in px) from the center of the images in which local maxima are considered.
+        """
         self._image_series = image_series
         self._window_r = window_r
-        self._no_ntr = no_ntr
+        self._include_radius = include_r
 
     def get_movement_series_list(self):
         movement_series_list = []
@@ -144,8 +149,8 @@ class MovementTracker:
         return max_coord, mask
 
     def add_to_movement_series_array(self, x, y, movement_series_array, im_i):
-        # ignore local maxima on the edges
-        if x in [0, 39] or y in [0, 39]:
+        # ignore local maxima outside of include_radius
+        if np.sqrt((x - 20) ** 2 + (y - 20) ** 2) > self._include_radius:
             return -2
         for i, series in enumerate(movement_series_array):
             if series.get_final_i() != im_i:

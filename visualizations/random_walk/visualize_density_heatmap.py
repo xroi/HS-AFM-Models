@@ -16,7 +16,7 @@ def visualize_density_heatmap(movement_series_list, file_path):
         go.Heatmap(z=z,
                    colorbar={"title": 'Frames'},
                    zmin=0,
-                   zmax=100,
+                   zmax=40,
                    colorscale=cm))
     fig.layout.height = 500
     fig.layout.width = 500

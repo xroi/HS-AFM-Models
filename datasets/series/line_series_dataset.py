@@ -57,6 +57,26 @@ class LineSeriesDataset(AfmDataset):
         stacked_lines = stacked_lines[:, 1:]
         return stacked_lines
 
+    def get_center_of_mass(self, i, radius_around_center):
+        # calculate temporal mean
+        x, _ = self.__getitem__(i)
+        x = np.dstack(x).mean(axis=2)
+
+        # set values to minimum
+        x = x - 47
+        x[x < 0] = 0
+
+        # set to 0 values outside of circular mask
+        indices = np.indices(x.shape)
+        mask = (indices[0] - 20) ** 2 + (indices[1] - 20) ** 2 > radius_around_center ** 2
+        x[mask] = 0
+
+        # calculate center of mass
+        total = x.sum()
+        x_coord = (x.sum(axis=1) @ range(x.shape[0])) / total
+        y_coord = (x.sum(axis=0) @ range(x.shape[1])) / total
+        return x_coord, y_coord
+
     def get_stacked_data(self):
         """
         :return: a 40x40xn array with non rasterized line scans. The diagonal entries form the rasterized line scan.
