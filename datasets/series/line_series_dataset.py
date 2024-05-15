@@ -1,17 +1,25 @@
 import numpy as np
-from datasets.afm_dataset import AfmDataset
+from datasets.series.sliding_mean_dataset import SlidingMeanDataset
 from functools import reduce
 
 
-class LineSeriesDataset(AfmDataset):
-    def __init__(self, data_path, pickle_amount, line_y=20, get_back_frames=True):
+class LineSeriesDataset():
+    def __init__(self, data_path, pickle_amount, line_y=20, get_back_frames=True, temporal_window_size=0,
+                 spatial_window_size=0):
         """ X = A series of full non rasterized HS-AFM images, corresponding to a single rasterized image.
         Y = A single rasterized image.
         """
-        super().__init__(data_path, pickle_amount)
+
+        # super().__init__(data_path, pickle_amount)
+        self.sliding_mean_dataset = SlidingMeanDataset(data_path=data_path, pickle_amount=pickle_amount,
+                                                       temporal_window_size=temporal_window_size,
+                                                       spatial_window_size=spatial_window_size,
+                                                       discard_start_end=True)
+        self.size_x = self.sliding_mean_dataset.size_x
+        self.size_y = self.sliding_mean_dataset.size_y
         self.get_back_frames = get_back_frames
-        self.single_data_raster_length = self.single_data_raster_length * self.size_y
-        self.n_samples = self.single_data_raster_length * self.good_pickle_amount
+        self.single_data_raster_length = int(len(self.sliding_mean_dataset[0][0]) / 80) - 1
+        self.n_samples = self.single_data_raster_length * self.sliding_mean_dataset.good_pickle_amount
         self.line_y = line_y
         self.stacked_data = None
 
@@ -21,16 +29,12 @@ class LineSeriesDataset(AfmDataset):
         if not 0 <= index < len(self):
             raise IndexError("Index out of range")
         # dataset[i]
-        pickle_i, raster_i = np.unravel_index(index, (self.good_pickle_amount,
+        pickle_i, raster_i = np.unravel_index(index, (self.sliding_mean_dataset.good_pickle_amount,
                                                       self.single_data_raster_length))
-        pickle_i = self.good_pickle_index_list[pickle_i]
-        if pickle_i != self.cur_pickle_i:
-            self.cur_pickle = self._load_pickle_i(pickle_i)
-            self.cur_pickle_i = pickle_i
 
         frames_in_single_raster = self.size_y
 
-        x = self.cur_pickle["non_rasterized_maps"][
+        x = self.sliding_mean_dataset[pickle_i][0][
             frames_in_single_raster * (raster_i * 2): frames_in_single_raster * (
                     (raster_i * 2) + (2 if self.get_back_frames else 1))]
         y = self._simple_line_raster(x, self.line_y)
@@ -93,7 +97,7 @@ class LineSeriesDataset(AfmDataset):
         self.stacked_data = res
         return res
 
-    def get_regression_formatted_data_(self, stacked_data):
+    def get_regression_formatted_data(self, stacked_data):
         X_mat = stacked_data[0, 0, :][:, np.newaxis]
         for i in range(1, 40):
             X_mat = np.concatenate((X_mat, stacked_data[i, i, :][:, np.newaxis]), axis=1)

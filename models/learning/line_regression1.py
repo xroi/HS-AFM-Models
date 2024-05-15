@@ -16,7 +16,7 @@ class LineRegression1:
     def train_regression_models(self):
         dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40", 75, line_y=20, get_back_frames=False)
         stacked_data = dataset.get_stacked_data()
-        regression_X = dataset.get_regression_formatted_data_(stacked_data)  # n_samples x n_features
+        regression_X = dataset.get_regression_formatted_data(stacked_data)  # n_samples x n_features
         # poly = PolynomialFeatures(2, interaction_only=True)
         # regression_X = poly.fit_transform(regression_X)
         for i in range(40):

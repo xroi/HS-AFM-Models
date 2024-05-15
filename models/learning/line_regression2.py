@@ -18,7 +18,7 @@ class LineRegression2:
     def train_regression_models(self):
         dataset = LineSeriesDataset("temp_datasets/mini_200uM_10ns_40x40", 75, line_y=20, get_back_frames=False)
         stacked_data = dataset.get_stacked_data()
-        regression_X = dataset.get_regression_formatted_data_(stacked_data)
+        regression_X = dataset.get_regression_formatted_data(stacked_data)
 
         first = np.zeros(shape=(1, 1560))
         for i in range(stacked_data.shape[2]):

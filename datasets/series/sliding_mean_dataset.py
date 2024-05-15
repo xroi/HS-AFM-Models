@@ -4,13 +4,19 @@ from datasets.series.series_dataset import SeriesDataset
 
 
 class SlidingMeanDataset(SeriesDataset):
-    def __init__(self, data_path, pickle_amount, temporal_window_size=0, spatial_window_size=0, use_original_y=False):
+    def __init__(self, data_path, pickle_amount, temporal_window_size=0, spatial_window_size=0, use_original_y=False,
+                 discard_start_end=False):
         super().__init__(data_path, pickle_amount)
         self.temporal_window_size = temporal_window_size
         self.spacial_window_size = spatial_window_size
         self.use_original_y = use_original_y
+        self.discard_start_end = discard_start_end
+        self.cached_i = -1
+        self.cached_x, self.cached_y = None, None
 
     def __getitem__(self, index):
+        if index == self.cached_i:
+            return self.cached_x, self.cached_y
         x, y = SeriesDataset.__getitem__(self, index)
         if self.spacial_window_size > 0:
             x = [self._gaussian_filter(im, self.spacial_window_size) for im in x]
@@ -18,8 +24,12 @@ class SlidingMeanDataset(SeriesDataset):
             x = np.dstack(x)
             x = np.apply_along_axis(self._moving_average, 2, x, self.temporal_window_size)
             x = [x[:, :, i] for i in range(x.shape[2])]
+        if self.discard_start_end:
+            x = x[self.temporal_window_size:len(x) - self.temporal_window_size]
         if not self.use_original_y:
             y = self._simple_raster(x)
+        self.cached_x = x
+        self.cached_y = y
         return x, y
 
     @staticmethod
