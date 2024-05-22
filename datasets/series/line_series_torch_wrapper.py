@@ -1,18 +1,28 @@
 import numpy as np
+from datasets.series.line_series_dataset import LineSeriesDataset
 from torch.utils.data import Dataset
 import torch
 
 
 class LineSeriesTorchWrapper(Dataset):
-    def __init__(self, dataset, regression_model):
+    def __init__(self, dataset: LineSeriesDataset, com_radius_around_center, max_seq_len):
         self.dataset = dataset
-        self.regression_model = regression_model
+        self.com_radius_around_center = com_radius_around_center
+        self.max_seq_len = max_seq_len
 
     def __getitem__(self, index):
-        _, line = self.dataset[index]
-        x = self.regression_model.pred(line.T)
-        y = self.dataset.get_single_stacked_lines(index)
+        x = np.zeros(shape=(1, 40))  # len(seq) x n_features
+        y = np.zeros(shape=(1, 2))  # len(seq) x n_targets
+        for i in range(self.max_seq_len):
+            _, line = self.dataset[index * self.max_seq_len + i]
+            if self.dataset.is_new_seq and i != 0:
+                break
+            x = np.concatenate((x, line.T), axis=0)
+            y1, y2 = self.dataset.get_center_of_mass(index * self.max_seq_len + i, self.com_radius_around_center)
+            y = np.concatenate((y, np.array([y1, y2])[np.newaxis, :]))
+        x = x[1:, :]
+        y = y[1:, :]
         return torch.from_numpy(x), torch.from_numpy(y)
 
     def __len__(self):
-        return len(self.dataset)
+        return int(len(self.dataset) / self.max_seq_len) - 1

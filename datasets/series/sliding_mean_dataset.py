@@ -30,6 +30,7 @@ class SlidingMeanDataset(SeriesDataset):
             y = self._simple_raster(x)
         self.cached_x = x
         self.cached_y = y
+        self.cached_i = index
         return x, y
 
     @staticmethod

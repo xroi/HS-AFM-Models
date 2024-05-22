@@ -1,6 +1,7 @@
 import numpy as np
 from datasets.series.sliding_mean_dataset import SlidingMeanDataset
 from functools import reduce
+import math
 
 
 class LineSeriesDataset():
@@ -22,6 +23,9 @@ class LineSeriesDataset():
         self.n_samples = self.single_data_raster_length * self.sliding_mean_dataset.good_pickle_amount
         self.line_y = line_y
         self.stacked_data = None
+        self.is_new_seq = True  # true if the previously accessed via square brackets was the first in a new pickle
+        # file.
+        self.prev_pickle_i = -1
 
     def __getitem__(self, index):
         """x: 40/80 non rasterized frames (of forward and potentially back movement)
@@ -33,6 +37,8 @@ class LineSeriesDataset():
                                                       self.single_data_raster_length))
 
         frames_in_single_raster = self.size_y
+        self.is_new_seq = (pickle_i != self.prev_pickle_i)
+        self.prev_pickle_i = pickle_i
 
         x = self.sliding_mean_dataset[pickle_i][0][
             frames_in_single_raster * (raster_i * 2): frames_in_single_raster * (
@@ -77,6 +83,8 @@ class LineSeriesDataset():
 
         # calculate center of mass
         total = x.sum()
+        if total == 0:
+            return 20, 20
         x_coord = (x.sum(axis=1) @ range(x.shape[0])) / total
         y_coord = (x.sum(axis=0) @ range(x.shape[1])) / total
         return x_coord, y_coord
