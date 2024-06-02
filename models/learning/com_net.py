@@ -32,8 +32,8 @@ class COMNeuralNet(nn.Module):
 class COMNeuralNetTrainer:
     BATCH_SIZE = 1
     NUM_EPOCHS = 5
-    DEVICE = "cuda"
-    # DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    # DEVICE = "cuda"
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     # dataset parameters
     COM_RADIUS_AROUND_CENTER = 11
@@ -108,16 +108,16 @@ class COMNeuralNetTrainer:
             a0_preds = np.concatenate((a0_preds, pred_y[0, :, 0].cpu().detach().numpy()))
             a1_preds = np.concatenate((a1_preds, pred_y[0, :, 1].cpu().detach().numpy()))
         print([x_loss / len(torch_dataset), y_loss / len(torch_dataset)])
-        import matplotlib.pyplot as plt
-        m, b = np.polyfit(a1_gts, a1_preds, 1)
-        plt.scatter(a1_gts, a1_preds, alpha=0.2)
-        plt.plot(a1_gts, m * a1_gts + b, color="orange")
-        plt.xlabel("Ground Truth")
-        plt.ylabel("Prediction")
-        ax = plt.gca()
-        plt.axis('equal')
-        plt.show()
-        return x_loss / len(torch_dataset) + y_loss / len(torch_dataset)
+        # import matplotlib.pyplot as plt
+        # m, b = np.polyfit(a1_gts, a1_preds, 1)
+        # plt.scatter(a1_gts, a1_preds, alpha=0.2)
+        # plt.plot(a1_gts, m * a1_gts + b, color="orange")
+        # plt.xlabel("Ground Truth")
+        # plt.ylabel("Prediction")
+        # ax = plt.gca()
+        # plt.axis('equal')
+        # plt.show()
+        # return x_loss / len(torch_dataset) + y_loss / len(torch_dataset)
 
     def train_single_sequence(self, line_scans_seq, com_ground_truths):
         # self.model.refresh_h0()
@@ -170,7 +170,7 @@ class COMNeuralNetTrainer:
 class COMNetHyperparameterOptimizer:
     def optimize_hyperparameters(self):
         def objective(trial: optuna.trial):
-            hidden_size = trial.suggest_int('hidden_size', 10, 200)
+            hidden_size = trial.suggest_int('hidden_size', 10, 250)
             num_layers = trial.suggest_int('num_layers', 1, 5)
             max_seq_len = trial.suggest_categorical('max_seq_len', [19, 38])
             bidirectional = trial.suggest_categorical('bidirectional', [True, False])
