@@ -71,8 +71,8 @@ def add_tip_position_to_image(i, image_draw, maps, pixel_size):
 
 def draw_movement_series(i, image_draw, maps, movement_series_list, pixel_size):
     prev_drawn = {}
-    prev_points_to_show = 3
-    for series in movement_series_list:
+    prev_points_to_show = 0
+    for k, series in enumerate(movement_series_list):
         prev_drawn[series] = {}
         for j in range(-prev_points_to_show, 1, 1):
             if series.is_i_in_range(i + j):
@@ -81,7 +81,10 @@ def draw_movement_series(i, image_draw, maps, movement_series_list, pixel_size):
                 point_coords = ((pos[0] + 0.1) * pixel_size, (pos[1] + 0.1) * pixel_size,
                                 (pos[0] + 0.9) * pixel_size, (pos[1] + 0.9) * pixel_size)
                 opacity = int(np.exp(j) * 255)
-                image_draw.ellipse(point_coords, fill=(0, 0, 0, opacity))
+                if k % 2 == 0:
+                    image_draw.ellipse(point_coords, fill=(0, 0, 0, opacity))
+                else:
+                    image_draw.ellipse(point_coords, fill=(195, 0, 255, opacity))
 
 
 def draw_timestamp(image_draw, timestamp_font, timestamp_step, i):

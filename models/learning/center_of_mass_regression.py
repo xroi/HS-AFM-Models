@@ -12,8 +12,8 @@ class CenterOfMassRegression:
     def __init__(self):
         self.model = LinearRegression()
         self.RADIUS_AROUND_CENTER = 11
-        self.SPATIAL_WINDOW_SIZE = 7
-        self.TEMPORAL_WINDOW_SIZE = 20
+        self.SPATIAL_WINDOW_SIZE = 5
+        self.TEMPORAL_WINDOW_SIZE = 5
 
     def train_regression_models(self):
         dataset = LineSeriesDataset("temp_datasets/mini_200uM_100ns_40x40", 100, line_y=20, get_back_frames=False,
@@ -31,23 +31,34 @@ class CenterOfMassRegression:
                                     temporal_window_size=self.TEMPORAL_WINDOW_SIZE,
                                     spatial_window_size=self.SPATIAL_WINDOW_SIZE)
         regression_X, ground_truth = self.format_regression_x_y(dataset)
-        pred_values = self.model.predict(regression_X)
-        # pred_value = np.mean(regression_X[])
+        # pred_values = self.model.predict(regression_X)
 
-        residuals = (ground_truth - pred_values) ** 2
-        print(np.mean(residuals, axis=0))
+        prev_pred = [0, 0]
+        x_loss, y_loss = 0, 0
+        x_mean_of_means, y_mean_of_means = 0, 0
+        for i in range(regression_X.shape[0]):
+            if i not in dataset.new_seqs:
+                regression_X[i, 40:42] = prev_pred
+                x_mean_of_means += x_loss / 38
+                y_mean_of_means += y_loss / 38
+                x_loss, y_loss = 0, 0
+            pred = self.pred(regression_X[i, :][np.newaxis, :])
+            x_loss += (ground_truth[i, 0] - pred[0, 0]) ** 2
+            y_loss += (ground_truth[i, 1] - pred[0, 1]) ** 2
+            prev_pred = pred
+        print([x_mean_of_means / len(dataset.new_seqs), y_mean_of_means / len(dataset.new_seqs)])
 
         # np.set_printoptions(threshold=sys.maxsize)
-        import matplotlib.pyplot as plt
-        def plot_gt_pred(axis):
-            x = range(pred_values.shape[0])
-            plt.scatter(ground_truth[:, axis], pred_values[:, axis], alpha=0.2)
-            ax = plt.gca()
-            ax.set_aspect('equal', adjustable='box')
-            plt.show()
-
-        plot_gt_pred(0)
-        plot_gt_pred(1)
+        # import matplotlib.pyplot as plt
+        # def plot_gt_pred(axis):
+        #     x = range(pred_values.shape[0])
+        #     plt.scatter(ground_truth[:, axis], pred_values[:, axis], alpha=0.2)
+        #     ax = plt.gca()
+        #     ax.set_aspect('equal', adjustable='box')
+        #     plt.show()
+        #
+        # plot_gt_pred(0)
+        # plot_gt_pred(1)
 
     def format_regression_x_y(self, dataset):
         prev_pickle = -1
@@ -57,10 +68,9 @@ class CenterOfMassRegression:
         for i in range(len(dataset)):
             _, y = dataset[i]
             if dataset.sliding_mean_dataset.cur_pickle_i != prev_pickle:
-                # ignore the first entry in each pickle because it has no previous entry
+                # set the com to be 0 on the first entry of each pickle
                 prev_pickle = dataset.sliding_mean_dataset.cur_pickle_i
-                prev_x_com, prev_y_com = dataset.get_center_of_mass(i, self.RADIUS_AROUND_CENTER)
-                continue
+                prev_x_com, prev_y_com = 19.5, 19.5
             x_com, y_com = dataset.get_center_of_mass(i, self.RADIUS_AROUND_CENTER)
             regression_X = np.concatenate(
                 (regression_X, np.concatenate((y, np.array([prev_x_com, prev_y_com])[:, np.newaxis])).T), axis=0)
@@ -72,7 +82,6 @@ class CenterOfMassRegression:
 
     def pred(self, x):
         """Given a rasterized vector, concatenated to [prev_com_x,prev_com_y] return predicted [cur_com_x,cur_com_y]"""
-        # todo do it sequentially and use previous com results
         return self.model.predict(x)
 
     def save_model(self, file_name):

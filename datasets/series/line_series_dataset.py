@@ -26,24 +26,35 @@ class LineSeriesDataset():
         self.is_new_seq = True  # true if the previously accessed via square brackets was the first in a new pickle
         # file.
         self.prev_pickle_i = -1
+        self.new_seqs = {0}
+        self.cached_x, self.cached_y, self.cached_i = None, None, None
 
     def __getitem__(self, index):
         """x: 40/80 non rasterized frames (of forward and potentially back movement)
            y: the forward rastering line obtained from the first 40 frames of x"""
         if not 0 <= index < len(self):
             raise IndexError("Index out of range")
+        if index == self.cached_i:
+            return self.cached_x, self.cached_y
         # dataset[i]
         pickle_i, raster_i = np.unravel_index(index, (self.sliding_mean_dataset.good_pickle_amount,
                                                       self.single_data_raster_length))
 
         frames_in_single_raster = self.size_y
         self.is_new_seq = (pickle_i != self.prev_pickle_i)
+        if self.is_new_seq:
+            self.new_seqs.add(index)
         self.prev_pickle_i = pickle_i
 
-        x = self.sliding_mean_dataset[pickle_i][0][
-            frames_in_single_raster * (raster_i * 2): frames_in_single_raster * (
-                    (raster_i * 2) + (2 if self.get_back_frames else 1))]
-        y = self._simple_line_raster(x, self.line_y)
+        x, _, orig_x = self.sliding_mean_dataset[pickle_i]
+        x = x[frames_in_single_raster * (raster_i * 2): frames_in_single_raster * (
+                (raster_i * 2) + (2 if self.get_back_frames else 1))]
+        orig_x = orig_x[frames_in_single_raster * (raster_i * 2): frames_in_single_raster * (
+                (raster_i * 2) + (2 if self.get_back_frames else 1))]
+        y = self._simple_line_raster(orig_x, self.line_y)
+        self.cached_x = x
+        self.cached_y = y
+        self.cached_i = index
         return x, y
 
     def __len__(self):
@@ -73,7 +84,7 @@ class LineSeriesDataset():
         x = np.dstack(x).mean(axis=2)
 
         # set values to minimum
-        x = x - 47
+        x = x - 47  # todo bad
         x[x < 0] = 0
 
         # set to 0 values outside of circular mask
@@ -88,6 +99,18 @@ class LineSeriesDataset():
         x_coord = (x.sum(axis=1) @ range(x.shape[0])) / total
         y_coord = (x.sum(axis=0) @ range(x.shape[1])) / total
         return x_coord, y_coord
+
+    def get_local_maxima(self, i, radius_around_center):
+        """returns coordinates and value of local maxima"""
+        x, _ = self.__getitem__(i)
+        x = np.dstack(x).mean(axis=2)
+
+        # set to 0 values outside of circular mask
+        indices = np.indices(x.shape)
+        mask = (indices[0] - 20) ** 2 + (indices[1] - 20) ** 2 > radius_around_center ** 2
+        x[mask] = 0
+
+        return np.append(np.unravel_index(x.argmax(), x.shape), np.max(x))
 
     def get_stacked_data(self):
         """
